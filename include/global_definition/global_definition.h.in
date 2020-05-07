@@ -1,0 +1,19 @@
+/*
+ * @Author: Ning Xu
+ * @Email: nxu@umich.edu
+ * @Date: 2020-04-22 00:13:46
+ * @Last Modified by: Ning Xu
+ * @Last Modified time: 2020-04-22 00:22:14
+ * @Description: Global Definitions
+ */
+#ifndef LIDAR_SLAM_INCLUDE_GLOBAL_DEFINITION_H_IN_
+#define LIDAR_SLAM_INCLUDE_GLOBAL_DEFINITION_H_IN_
+
+#include <string>
+
+namespace lidar_slam {
+// NOTE: for a static string lint recommend to use a const char
+const std::string WORK_SPACE_PATH = "@WORK_SPACE_PATH@";
+}  // namespace lidar_slam
+
+#endif  // LIDAR_SLAM_INCLUDE_GLOBAL_DEFINITION_H_IN_

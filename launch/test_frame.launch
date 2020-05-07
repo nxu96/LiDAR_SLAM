@@ -1,0 +1,6 @@
+<launch>
+<node pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_slam)/rviz/test_frame.rviz"></node>
+<node pkg="lidar_slam" type="test_frame_node" name="test_frame_node" output="screen"></node>
+<node pkg="tf" type="static_transform_publisher" name="map_broadcaster" args="1 0 0 0 0 0 1 /map /lidar 100" />
+
+</launch>
