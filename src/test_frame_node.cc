@@ -2,15 +2,15 @@
  * @Author: Ning Xu
  * @Email: nxu@umich.edu
  * @Date: 2020-05-07 16:40:03
- * @Last Modified by:   Ning Xu
- * @Last Modified time: 2020-05-07 16:40:03
+ * @Last Modified by: Ning Xu
+ * @Last Modified time: 2020-05-08 17:21:48
  * @Description: Description
  */
 #include <ros/ros.h>
 #include <pcl/common/transforms.h>
 
 #include "glog/logging.h"
-#include "global_definition/global_definition.h.in"
+#include "global_definition/global_definition.h"
 
 // pub
 #include "publisher/cloud_publisher.h"
