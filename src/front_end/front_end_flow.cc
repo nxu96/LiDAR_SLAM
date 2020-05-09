@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-08 15:54:43
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-08 17:35:46
+ * @Last Modified time: 2020-05-09 13:48:25
  * @Description: Front end data flow management implementation
  */
 #include "front_end/front_end_flow.h"
@@ -21,9 +21,12 @@ FrontEndFlow::FrontEndFlow(ros::NodeHandle& nh) {
   // IMU
   imu_sub_ptr_ =
       std::make_shared<IMUSubscriber>(nh, "/kitti/oxts/imu", 1000000);
+  // Velocity
+  velocity_sub_ptr_ =
+      std::make_shared<VelocitySubscriber>(nh, "/kitti/oxts/gps/vel", 1000000);
   // TF listener
   lidar_to_imu_ptr_ =
-      std::make_shared<TFListener>(nh, "velo_link", "imu_link");
+      std::make_shared<TFListener>(nh, "imu_link", "velo_link");
   // current scan
   cloud_pub_ptr_ =
       std::make_shared<CloudPublisher>(nh, "current_scan", 100, "map");
@@ -47,7 +50,9 @@ FrontEndFlow::FrontEndFlow(ros::NodeHandle& nh) {
 }
 
 bool FrontEndFlow::Run() {
-  ReadData();
+  if (!ReadData()) {
+    return false;
+  }
 
   if (!Initcalibration()) {
     return false;
@@ -69,9 +74,11 @@ bool FrontEndFlow::Run() {
 
   return true;
 }
+
 bool FrontEndFlow::SaveMap() {
   return front_end_ptr_->SaveMap();
 }
+
 bool FrontEndFlow::PublishGlobalMap() {
   if (front_end_ptr_->GetNewGlobalMap(global_map_ptr_)) {
     global_map_pub_ptr_->Publish(global_map_ptr_);
@@ -79,11 +86,35 @@ bool FrontEndFlow::PublishGlobalMap() {
   }
   return true;
 }
+
 bool FrontEndFlow::ReadData() {
   cloud_sub_ptr_->ParseData(&cloud_data_buff_);
-  imu_sub_ptr_->ParseData(&imu_data_buff_);
-  gnss_sub_ptr_->ParseData(&gnss_data_buff_);
+  static std::deque<IMUData> unsynced_imu_;
+  static std::deque<VelocityData> unsynced_velocity_;
+  static std::deque<GNSSData> unsynced_gnss_;
 
+  imu_sub_ptr_->ParseData(&unsynced_imu_);
+  gnss_sub_ptr_->ParseData(&unsynced_gnss_);
+  velocity_sub_ptr_->ParseData(&unsynced_velocity_);
+
+  if (cloud_data_buff_.empty()) {
+    return false;
+  }
+  double sync_time = cloud_data_buff_.front().time_;
+  bool valid_imu = IMUData::SyncData(unsynced_imu_, imu_data_buff_, sync_time);
+  bool valid_gnss = GNSSData::SyncData(
+    unsynced_gnss_, gnss_data_buff_, sync_time);
+  bool valid_velocity = VelocityData::SyncData(
+    unsynced_velocity_, velocity_data_buff_, sync_time);
+  // NOTE: The following several lines does not make sense to me
+  static bool sensor_inited = false;
+  if (!sensor_inited) {
+    if (!valid_imu || !valid_gnss || !valid_velocity) {
+      cloud_data_buff_.pop_front();
+      return false;
+    }
+    sensor_inited = true;
+  }
   return true;
 }
 
@@ -109,7 +140,7 @@ bool FrontEndFlow::InitGNSS() {
 
 bool FrontEndFlow::hasData() {
   if (cloud_data_buff_.empty() || imu_data_buff_.empty()
-    || gnss_data_buff_.empty()) {
+    || gnss_data_buff_.empty() || velocity_data_buff_.empty()) {
     return false;
   }
   return true;
@@ -119,6 +150,7 @@ bool FrontEndFlow::ValidData() {
   current_cloud_data_ = cloud_data_buff_.front();
   current_imu_data_ = imu_data_buff_.front();
   current_gnss_data_ = gnss_data_buff_.front();
+  current_velocity_data_ = velocity_data_buff_.front();
   double time_diff = current_cloud_data_.time_ - current_imu_data_.time_;
   if (time_diff < -0.05) {
     // cloud data is too old throw it away
@@ -127,11 +159,13 @@ bool FrontEndFlow::ValidData() {
   } else if (time_diff > 0.05) {
     imu_data_buff_.pop_front();
     gnss_data_buff_.pop_front();
+    velocity_data_buff_.pop_front();
     return false;
   } else {
     cloud_data_buff_.pop_front();
     imu_data_buff_.pop_front();
     gnss_data_buff_.pop_front();
+    velocity_data_buff_.pop_front();
     return true;
   }
 }

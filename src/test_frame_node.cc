@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-07 16:40:03
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-08 17:21:48
+ * @Last Modified time: 2020-05-09 12:59:06
  * @Description: Description
  */
 #include <ros/ros.h>
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<IMUSubscriber> imu_sub_ptr =
       std::make_shared<IMUSubscriber>(nh, "/kitti/oxts/imu", 1000000);
   std::shared_ptr<TFListener> lidar_to_imu_ptr =
-      std::make_shared<TFListener>(nh, "velo_link", "imu_link");
+      std::make_shared<TFListener>(nh, "imu_link", "velo_link");
 
   std::shared_ptr<CloudPublisher> cloud_pub_ptr =
       std::make_shared<CloudPublisher>(nh, "current_scan", 100, "/map");

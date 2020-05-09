@@ -3,13 +3,13 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-04-22 12:36:53
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-04-22 12:47:34
+ * @Last Modified time: 2020-05-09 12:00:39
  * @Description: Gnss data class
  */
 
 #ifndef LIDAR_SLAM_INCLUDE_SENSOR_DATA_GNSS_DATA_H_
 #define LIDAR_SLAM_INCLUDE_SENSOR_DATA_GNSS_DATA_H_
-
+#include <deque>
 #include "Geocentric/LocalCartesian.hpp"
 
 namespace lidar_slam {
@@ -29,7 +29,11 @@ class GNSSData {
   double local_U_ = 0.0;
   int status_ = 0;
   int service_ = 0;
-
+ 
+ public:
+  static bool SyncData(std::deque<GNSSData>& UnsyncedData,
+    std::deque<GNSSData>& SyncedData, double sync_time);
+  
  private:
   static GeographicLib::LocalCartesian geo_converter_;
   static bool origin_position_initialized_;
