@@ -3,12 +3,14 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-08 15:54:43
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-09 13:48:25
+ * @Last Modified time: 2020-05-10 22:57:00
  * @Description: Front end data flow management implementation
  */
 #include "front_end/front_end_flow.h"
+#include "tools/file_manager.h"
 #include "glog/logging.h"
-
+// global definition
+#include "global_definition/global_definition.h"
 namespace lidar_slam {
 
 FrontEndFlow::FrontEndFlow(ros::NodeHandle& nh) {
@@ -69,6 +71,7 @@ bool FrontEndFlow::Run() {
     UpdateGNSSOdometry();
     if (UpdateLidarOdometry()) {
       PublishData();
+      SaveTrajectory();
     }
   }
 
@@ -196,6 +199,41 @@ bool FrontEndFlow::UpdateLidarOdometry() {
   } else {
     return false;
   }
+}
+
+bool FrontEndFlow::SaveTrajectory() {
+  static std::ofstream ground_truth, lidar_odom;
+  static bool is_file_created = false;
+  if (!is_file_created) {
+    if (!FileManager::CreateDirectory(WORK_SPACE_PATH+"/data/trajectory")) {
+      return false;
+    }
+    if (!FileManager::CreateFile(ground_truth,
+      WORK_SPACE_PATH+"/data/trajectory/ground_truth.txt")) {
+      return false;
+    }
+    if (!FileManager::CreateFile(lidar_odom,
+      WORK_SPACE_PATH+"/data/trajectory/lidar_odom.txt")) {
+      return false;
+    }
+    is_file_created = true;
+  }
+  for (int i = 0; i < 3; ++i) {  // save the 3X4 matrix as a row in the txt file
+    for (int j = 0; j < 4; ++j) {
+      // NOTE: Use the gnss odometry as the ground truth pose;
+      ground_truth << gnss_odometry_(i, j);
+      lidar_odom << lidar_odometry_(i, j);
+      if (i == 2 && j == 3) {
+        ground_truth << std::endl;
+        lidar_odom << std::endl;
+      } else {
+        ground_truth << " ";
+        lidar_odom << " ";
+      }
+    }
+  }
+
+  return true;
 }
 
 bool FrontEndFlow::PublishData() {

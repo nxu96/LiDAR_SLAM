@@ -3,13 +3,13 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-09 10:34:19
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-09 13:50:59
+ * @Last Modified time: 2020-05-10 18:36:08
  * @Description: Velocity data class implementation
  */
 
+#include <iostream>
 #include "sensor_data/velocity_data.h"
 #include "glog/logging.h"
-#include <iostream>
 
 namespace lidar_slam {
 bool VelocityData::SyncData(std::deque<VelocityData>& UnsyncedData,

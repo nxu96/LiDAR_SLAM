@@ -1,11 +1,13 @@
 # lidar_SLAM
 LIDAR SLAM for Autonomous Vehicles
 
+## Building command
+
 ```
 catkin_make --only-pkg-with-deps lidar_slam
 ```
 
-
+## TO-DO List
 
 - [x] Kitti dataset preparation
 - [x] Project framework design with ROS
@@ -13,7 +15,7 @@ catkin_make --only-pkg-with-deps lidar_slam
 - [x] Front end refactoring
 - [x] Sensors time synchronization algorithm
 - [ ] Add point cloud visualizer based on PCL
-- [ ] Lidar odometry accuracy evaluation
+- [x] Lidar odometry accuracy evaluation with evo
 - [ ] Point cloud distortion correction/compensation algorithm
 - [ ] Module design and refactoring
   * Data pre-process
@@ -27,6 +29,12 @@ catkin_make --only-pkg-with-deps lidar_slam
 - [ ] Localization with global map
 
 
+
+## Test Environment
+
+* Ubuntu 18.04
+* ROS Melodic
+* PCL 1.8
 
 
 

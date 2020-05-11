@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-08 12:42:34
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-09 12:14:26
+ * @Last Modified time: 2020-05-10 22:36:51
  * @Description: Front end flow header file
  */
 #ifndef LIDAR_SLAM_INCLUDE_FRONT_END_FRONT_END_FLOW_H_
@@ -41,6 +41,7 @@ class FrontEndFlow {
   bool UpdateGNSSOdometry();
   bool UpdateLidarOdometry();
   bool PublishData();
+  bool SaveTrajectory();
 
  private:
   std::shared_ptr<CloudSubscriber> cloud_sub_ptr_;
