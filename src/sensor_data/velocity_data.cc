@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-09 10:34:19
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-10 18:36:08
+ * @Last Modified time: 2020-05-16 16:29:58
  * @Description: Velocity data class implementation
  */
 
@@ -71,5 +71,29 @@ bool VelocityData::SyncData(std::deque<VelocityData>& UnsyncedData,
                                 back_data.angular_velocity_.z_ * back_scale;
   SyncedData.push_back(synced_data);
   return true;
+}
+
+void VelocityData::TransformCoordinate(Eigen::Matrix4f imu_to_lidar) {
+  Eigen::Matrix4d matrix = imu_to_lidar.cast<double>();
+  Eigen::Matrix3d rot_mat = matrix.block<3, 3>(0, 0);
+  Eigen::Vector3d w(angular_velocity_.x_, angular_velocity_.y_,
+                    angular_velocity_.z_);
+  Eigen::Vector3d v(linear_velocity_.x_, linear_velocity_.y_,
+                    linear_velocity_.z_);
+  w = rot_mat * w;
+  v = rot_mat * v;
+  Eigen::Vector3d r(matrix(0, 3), matrix(1, 3), matrix(2, 3));
+  Eigen::Vector3d delta_v;
+  // TODO(nxu): Figure out the IMU model here
+  delta_v(0) = w(1) * r(2) - w(2) * r(1);
+  delta_v(1) = w(2) * r(0) - w(0) * r(2);
+  delta_v(2) = w(1) * r(1) - w(1) * r(0);
+  v = v + delta_v;
+  angular_velocity_.x_ = w(0);
+  angular_velocity_.y_ = w(1);
+  angular_velocity_.z_ = w(2);
+  linear_velocity_.x_ = v(0);
+  linear_velocity_.y_ = v(1);
+  linear_velocity_.z_ = v(2);
 }
 }  // namespace lidar_slam

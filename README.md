@@ -16,7 +16,7 @@ catkin_make --only-pkg-with-deps lidar_slam
 - [x] Sensors time synchronization algorithm
 - [ ] Add point cloud visualizer based on PCL
 - [x] Lidar odometry accuracy evaluation with evo
-- [ ] Point cloud distortion correction/compensation algorithm
+- [x] Point cloud distortion correction/motion compensation algorithm
 - [ ] Module design and refactoring
   * Data pre-process
   * Front end lidar odometry
@@ -27,6 +27,9 @@ catkin_make --only-pkg-with-deps lidar_slam
 - [ ] Loop closure
 - [ ] Front end extension with A-LOAM
 - [ ] Localization with global map
+- [ ] IMU state model derivation
+
+
 
 
 
@@ -37,4 +40,9 @@ catkin_make --only-pkg-with-deps lidar_slam
 * PCL 1.8
 
 
+
+## Paper TO-DO List
+
+1. Robust and Precise Vehicle Localization Based on Multi-Sensor Fusion in Diverse City Scenes
+2. LiDAR Inertial Odometry Aided Robust LiDAR Localization System in Changing City Scenes
 

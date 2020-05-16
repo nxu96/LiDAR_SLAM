@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-08 12:42:34
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-10 22:36:51
+ * @Last Modified time: 2020-05-16 16:43:49
  * @Description: Front end flow header file
  */
 #ifndef LIDAR_SLAM_INCLUDE_FRONT_END_FRONT_END_FLOW_H_
@@ -23,6 +23,8 @@
 #include "tf_listener/tf_listener.h"
 // front end class
 #include "front_end/front_end.h"
+// distortion adjust
+#include "models/scan_adjust/distortion_adjust.h"
 namespace lidar_slam {
 class FrontEndFlow {
  public:
@@ -55,6 +57,7 @@ class FrontEndFlow {
   std::shared_ptr<OdometryPublisher> lidar_odom_pub_ptr_;
   std::shared_ptr<OdometryPublisher> gnss_odom_pub_ptr_;
   std::shared_ptr<FrontEnd> front_end_ptr_;
+  std::shared_ptr<DistortionAdjust> distortion_adjust_ptr_;
   std::deque<CloudData> cloud_data_buff_;
   std::deque<IMUData> imu_data_buff_;
   std::deque<GNSSData> gnss_data_buff_;

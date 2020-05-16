@@ -3,13 +3,14 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-09 10:03:40
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-09 10:05:23
+ * @Last Modified time: 2020-05-16 16:01:40
  * @Description: Velocity data header file
  */
 #ifndef LIDAR_SLAM_INCLUDE_SENSOR_DATA_VELOCITY_DATA_H_
 #define LIDAR_SLAM_INCLUDE_SENSOR_DATA_VELOCITY_DATA_H_
 
 #include <deque>
+#include <Eigen/Dense>
 
 namespace lidar_slam {
 class VelocityData {
@@ -34,6 +35,8 @@ class VelocityData {
   // how is this static function being used?
   static bool SyncData(std::deque<VelocityData>& UnsyncedData,
     std::deque<VelocityData>& SyncedData, double sync_time);
+
+  void TransformCoordinate(Eigen::Matrix4f imu_to_lidar);
 };
 }  // namespace lidar_slam
 #endif  // LIDAR_SLAM_INCLUDE_SENSOR_DATA_VELOCITY_DATA_H_

@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-08 15:54:43
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-10 22:57:00
+ * @Last Modified time: 2020-05-16 17:12:49
  * @Description: Front end data flow management implementation
  */
 #include "front_end/front_end_flow.h"
@@ -46,6 +46,7 @@ FrontEndFlow::FrontEndFlow(ros::NodeHandle& nh) {
   gnss_odom_pub_ptr_ =
       std::make_shared<OdometryPublisher>(nh, "gnss_odom", "map", "lidar", 100);
   front_end_ptr_ = std::make_shared<FrontEnd>();
+  distortion_adjust_ptr_ = std::make_shared<DistortionAdjust>();
   local_map_ptr_.reset(new CloudData::CLOUD());
   global_map_ptr_.reset(new CloudData::CLOUD());
   current_scan_ptr_.reset(new CloudData::CLOUD());
@@ -154,7 +155,8 @@ bool FrontEndFlow::ValidData() {
   current_imu_data_ = imu_data_buff_.front();
   current_gnss_data_ = gnss_data_buff_.front();
   current_velocity_data_ = velocity_data_buff_.front();
-  double time_diff = current_cloud_data_.time_ - current_imu_data_.time_;
+  double time_diff = current_cloud_data_.time_ - current_velocity_data_.time_;
+
   if (time_diff < -0.05) {
     // cloud data is too old throw it away
     cloud_data_buff_.pop_front();
@@ -186,19 +188,23 @@ bool FrontEndFlow::UpdateGNSSOdometry() {
 }
 
 bool FrontEndFlow::UpdateLidarOdometry() {
+  // NOTE: Distortion adjust here
+  // NOTE: The input argument should be imu_to_lidar transform
+  current_velocity_data_.TransformCoordinate(lidar_to_imu_.inverse());
+  const float SCAN_PERIOD = 0.1;  // 100 ms period
+  distortion_adjust_ptr_->SetMotionInfo(SCAN_PERIOD, current_velocity_data_);
+  distortion_adjust_ptr_->AdjustCloud(current_cloud_data_.cloud_ptr_,
+                                      current_cloud_data_.cloud_ptr_);
+
   static bool front_end_pose_inited = false;
   if (!front_end_pose_inited) {
     front_end_pose_inited = true;
     front_end_ptr_->SetInitPose(gnss_odometry_);
-    lidar_odometry_ = gnss_odometry_;
-    return true;
+    // lidar_odometry_ = gnss_odometry_;
+    return front_end_ptr_->Update(current_cloud_data_, lidar_odometry_);
   }
   lidar_odometry_ = Eigen::Matrix4f::Identity();
-  if (front_end_ptr_->Update(current_cloud_data_, lidar_odometry_)) {
-    return true;
-  } else {
-    return false;
-  }
+  return front_end_ptr_->Update(current_cloud_data_, lidar_odometry_);
 }
 
 bool FrontEndFlow::SaveTrajectory() {
