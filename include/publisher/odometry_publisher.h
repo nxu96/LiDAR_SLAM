@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-04-22 18:59:31
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-04-22 19:23:19
+ * @Last Modified time: 2020-05-17 14:52:32
  * @Description: Description
  */
 
@@ -19,11 +19,17 @@ namespace lidar_slam {
 class OdometryPublisher {
  public:
   OdometryPublisher(const ros::NodeHandle& nh, std::string topic_name,
-      std::string base_frame_id, std::string child_frame_id, size_t buff_size);
+                    std::string base_frame_id, std::string child_frame_id,
+                    size_t buff_size);
 
   OdometryPublisher() = default;
 
   void Publish(const Eigen::Matrix4f& transform_matrix);
+  void Publish(const Eigen::Matrix4f& transform_matrix, double time);
+  bool HasSubscribers();
+
+ private:
+  void PublishData(const Eigen::Matrix4f& transform_matrix, ros::Time time);
 
  private:
   ros::NodeHandle nh_;

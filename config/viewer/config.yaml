@@ -1,0 +1,20 @@
+data_path: ./
+
+global_map_filter: voxel_filter
+
+local_frame_num: 20
+
+local_map_filter: voxel_filter
+
+frame_filter: voxel_filter
+
+# Filtering
+# TODO(nxu): Verify these parameters!
+voxel_filter:
+  global_map:
+    leaf_size: [0.5, 0.5, 0.5]
+  local_map:
+    leaf_size: [0.5, 0.5, 0.5]
+  frame:
+    leaf_size: [0.5, 0.5, 0.5]
+  

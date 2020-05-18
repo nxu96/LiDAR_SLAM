@@ -3,12 +3,12 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-07 17:03:23
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-08 15:46:19
+ * @Last Modified time: 2020-05-17 21:56:01
  * @Description: Front end module header file
  */
 
-#ifndef LIDAR_SLAM_INCLUDE_FRONT_END_FRONT_END_H_
-#define LIDAR_SLAM_INCLUDE_FRONT_END_FRONT_END_H_
+#ifndef LIDAR_SLAM_INCLUDE_MAPPING_FRONT_END_FRONT_END_H_
+#define LIDAR_SLAM_INCLUDE_MAPPING_FRONT_END_FRONT_END_H_
 
 #include <Eigen/Dense>
 
@@ -32,19 +32,13 @@ class FrontEnd {
 
  public:
   FrontEnd();
-  bool InitWithConfig();
   // Take the latest point cloud and find the match, compute the transform
   bool Update(const CloudData& cloud_data, Eigen::Matrix4f& cloud_pose);
   bool SetInitPose(const Eigen::Matrix4f& init_pose);
-  // bool SetPredictPose(const Eigen::Matrix4f& predict_pose);
-  bool SaveMap();
-  bool GetNewLocalMap(CloudData::CLOUD_PTR& local_map_ptr);
-  bool GetNewGlobalMap(CloudData::CLOUD_PTR& global_map_ptr);
-  bool GetCurrentScan(CloudData::CLOUD_PTR& current_scan_ptr);
 
  private:
+  bool InitWithConfig();
   bool InitParam(const YAML::Node& config_node);
-  bool InitDataPath(const YAML::Node& config_node);
   bool InitRegistration(std::shared_ptr<RegistrationInterface>& regis_ptr,
     const YAML::Node& config_node);
   bool InitFilter(std::string filter_user,
@@ -63,21 +57,14 @@ class FrontEnd {
   std::shared_ptr<RegistrationInterface> regis_ptr_;
   // map container
   std::deque<Frame> local_map_;
-  std::deque<Frame> global_map_;
 
-  bool has_new_local_map_ = false;
-  bool has_new_global_map_ = false;
   CloudData::CLOUD_PTR local_map_ptr_;
-  CloudData::CLOUD_PTR global_map_ptr_;
-  CloudData::CLOUD_PTR result_cloud_ptr_;
   Frame current_frame_;
-  // TODO(nxu): asd
   Eigen::Matrix4f init_pose_ = Eigen::Matrix4f::Identity();
 
   float key_frame_distance_ = 2.0;
   int local_frame_size_ = 20;
-  // Eigen::Matrix4f predict_pose_ = Eigen::Matrix4f::Identity();
 };
 }  // namespace lidar_slam
 
-#endif  // LIDAR_SLAM_INCLUDE_FRONT_END_FRONT_END_H_
+#endif  // LIDAR_SLAM_INCLUDE_MAPPING_FRONT_END_FRONT_END_H_

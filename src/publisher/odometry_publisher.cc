@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-04-22 19:13:24
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-04-22 19:28:28
+ * @Last Modified time: 2020-05-17 17:13:22
  * @Description: Description
  */
 
@@ -18,8 +18,20 @@ OdometryPublisher::OdometryPublisher(const ros::NodeHandle& nh,
   odometry_.child_frame_id = child_frame_id;
 }
 
+void OdometryPublisher::Publish(const Eigen::Matrix4f& transform_matrix,
+                                double time) {
+  ros::Time ros_time(static_cast<float>(time));
+  PublishData(transform_matrix, ros_time);
+}
+
 void OdometryPublisher::Publish(const Eigen::Matrix4f& transform_matrix) {
-  odometry_.header.stamp = ros::Time::now();
+  ros::Time ros_time = ros::Time::now();
+  PublishData(transform_matrix, ros_time);
+}
+
+void OdometryPublisher::PublishData(const Eigen::Matrix4f& transform_matrix,
+                                    ros::Time ros_time) {
+  odometry_.header.stamp = ros_time;
 
   // set the position
   odometry_.pose.pose.position.x = transform_matrix(0, 3);
@@ -34,5 +46,9 @@ void OdometryPublisher::Publish(const Eigen::Matrix4f& transform_matrix) {
   odometry_.pose.pose.orientation.w = q.w();
 
   pub_.publish(odometry_);
+}
+
+bool OdometryPublisher::HasSubscribers() {
+  return pub_.getNumSubscribers() != 0;
 }
 }  // namespace lidar_slam

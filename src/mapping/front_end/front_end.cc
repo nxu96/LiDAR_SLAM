@@ -3,39 +3,34 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-07 16:55:18
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-16 16:59:57
+ * @Last Modified time: 2020-05-18 11:59:10
  * @Description: NDT Based Point Cloud Matching Front End (Lidar Odometry)
  */
-#include "front_end/front_end.h"
+#include "mapping/front_end/front_end.h"
+#include <glog/logging.h>
 #include <pcl/common/transforms.h>
 #include <pcl/io/pcd_io.h>
 #include <fstream>
 #include <vector>
 #include <deque>
 #include <boost/filesystem.hpp>
-#include "glog/logging.h"
-// TODO(nxu): I do not understand this .in header file
 #include "global_definition/global_definition.h"
 
 namespace lidar_slam {
 FrontEnd::FrontEnd() :
-    local_map_ptr_(new CloudData::CLOUD()),
-    global_map_ptr_(new CloudData::CLOUD()),
-    result_cloud_ptr_(new CloudData::CLOUD()) {
+    local_map_ptr_(new CloudData::CLOUD()) {
   // NOTE: Set some parameters inside the ctor
   InitWithConfig();
 }
 
 bool FrontEnd::InitWithConfig() {
   std::string config_file_path =
-    WORK_SPACE_PATH + "/config/front_end/front_config.yaml";
+    WORK_SPACE_PATH + "/config/front_end/config.yaml";
   YAML::Node config_node = YAML::LoadFile(config_file_path);
-
-  InitDataPath(config_node);
+  InitParam(config_node);
   InitRegistration(regis_ptr_, config_node);
   InitFilter("local_map", local_map_filter_ptr_, config_node);
   InitFilter("frame", frame_filter_ptr_, config_node);
-  InitFilter("display", display_filter_ptr_, config_node);
 
   return true;
 }
@@ -46,7 +41,7 @@ bool FrontEnd::InitParam(const YAML::Node& config_node) {
 
   return true;
 }
-
+/*
 bool FrontEnd::InitDataPath(const YAML::Node& config_node) {
   data_path_ = config_node["data_path"].as<std::string>();
   if (data_path_ == "./") {
@@ -76,6 +71,7 @@ bool FrontEnd::InitDataPath(const YAML::Node& config_node) {
 
   return true;
 }
+*/
 
 bool FrontEnd::InitRegistration(std::shared_ptr<RegistrationInterface>&
   regis_ptr, const YAML::Node& config_node) {
@@ -97,7 +93,7 @@ bool FrontEnd::InitFilter(std::string filter_user,
   const YAML::Node& config_node) {
   std::string filter_method =
     config_node[filter_user+"_filter"].as<std::string>();
-  LOG(INFO) << filter_user << " selects the filter method "
+  LOG(INFO) << "front_" << filter_user << " selects the filter method "
             << filter_method << std::endl;
   if (filter_method == "voxel_filter") {
     filter_ptr =
@@ -141,8 +137,9 @@ bool FrontEnd::Update(const CloudData& cloud_data,
   }
 
   // This is not the first frame then we perform the normal matching process
+  CloudData::CLOUD_PTR result_cloud_ptr(new CloudData::CLOUD());
   regis_ptr_->ScanMatch(filtered_cloud_ptr, predict_pose,
-    result_cloud_ptr_, current_frame_.pose_);
+    result_cloud_ptr, current_frame_.pose_);
   cloud_pose = current_frame_.pose_;
 
   // Update the transformation between two adjacent frames
@@ -168,18 +165,8 @@ bool FrontEnd::SetInitPose(const Eigen::Matrix4f& init_pose) {
   return true;
 }
 
-// bool FrontEnd::SetPredictPose(const Eigen::Matrix4f& predict_pose) {
-  // predict_pose_ = predict_pose;
-  // return true;
-// }
-
 // NOTE: Save a new key frame, think about how pointers are being used here!!
 bool FrontEnd::UpdateNewFrame(const Frame& new_key_frame) {
-  // save this new key frame candidate to disk to save memory
-  std::string file_path = data_path_ + "/key_frames/key_frame_" +
-    std::to_string(global_map_.size()) + ".pcd";
-  pcl::io::savePCDFileBinary(file_path, *new_key_frame.cloud_data_.cloud_ptr_);
-
   Frame key_frame = new_key_frame;
   // save this point cloud into the dynamic memory
   key_frame.cloud_data_.cloud_ptr_.reset(
@@ -200,10 +187,6 @@ bool FrontEnd::UpdateNewFrame(const Frame& new_key_frame) {
     // Stack the point cloud
     *local_map_ptr_ += *transformed_cloud_ptr;
   }
-  // NOTE: Do we need to free this part? No because pcl pointers are all shared
-  // delete transformed_cloud_ptr;
-  has_new_local_map_ = true;
-
   // Do not performing filtering if the key frame size is small
   if (local_map_.size() < 10) {
     regis_ptr_->SetInputTarget(local_map_ptr_);
@@ -212,7 +195,9 @@ bool FrontEnd::UpdateNewFrame(const Frame& new_key_frame) {
     local_map_filter_ptr_->Filter(local_map_ptr_, filtered_local_map_ptr);
     regis_ptr_->SetInputTarget(filtered_local_map_ptr);
   }
-
+  return true;
+}
+/*
   // Update the global map
   // NOTE: Here we reset the point cloud ptr before save it into the container
   // becasue we have already saved the point cloud to the disk so there
@@ -265,5 +250,6 @@ bool FrontEnd::GetCurrentScan(CloudData::CLOUD_PTR& current_scan_ptr) {
   display_filter_ptr_->Filter(result_cloud_ptr_, current_scan_ptr);
   return true;
 }
+*/
 
 }  // namespace lidar_slam

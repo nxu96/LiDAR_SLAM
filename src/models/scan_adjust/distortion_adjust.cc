@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-14 22:41:26
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-16 17:19:52
+ * @Last Modified time: 2020-05-17 16:14:39
  * @Description: Point Cloud Distortion Adjust Implementation
  */
 
@@ -29,7 +29,10 @@ bool DistortionAdjust::AdjustCloud(CloudData::CLOUD_PTR& input_cloud_ptr,
   CloudData::CLOUD_PTR origin_cloud_ptr(new CloudData::CLOUD(*input_cloud_ptr));
   // NOTE: Input and output point cloud pointer is the same thing
   // clear the output point cloud, make it ready for new points
-  output_cloud_ptr->points.clear();
+  // output_cloud_ptr->points.clear();
+  // NOTE: Here we use reset instead of clearing
+  // for the sake of saving memory. Think about vector capacity and size stuff.
+  output_cloud_ptr.reset(new CloudData::CLOUD());
   // input_cloud_ptr->points.clear();
   float angle_space = 2.0 * M_PI;
   // float delete_space = 5.0 * M_PI / 180.0;

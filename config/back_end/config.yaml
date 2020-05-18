@@ -1,0 +1,10 @@
+data_path: ./ # path for saving data
+
+key_frame_distance: 2.0  # key frame distance density
+
+optimize_step_with_none: 100  # optimization frequency when no information available
+
+optimize_step_with_loop: 10  # optimization with loop closure frequency
+
+optimize_step_with_gnss: 100  # optimization with gnss info frequency
+

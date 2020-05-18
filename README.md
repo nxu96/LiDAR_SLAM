@@ -17,7 +17,7 @@ catkin_make --only-pkg-with-deps lidar_slam
 - [ ] Add point cloud visualizer based on PCL
 - [x] Lidar odometry accuracy evaluation with evo
 - [x] Point cloud distortion correction/motion compensation algorithm
-- [ ] Module design and refactoring
+- [x] Module design and refactoring
   * Data pre-process
   * Front end lidar odometry
   * Back end graph optimization

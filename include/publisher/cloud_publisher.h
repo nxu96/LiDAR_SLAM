@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-04-22 00:19:51
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-04-22 18:42:51
+ * @Last Modified time: 2020-05-16 22:32:48
  * @Description: Publish Point Cloud
  */
 
@@ -23,7 +23,12 @@ class CloudPublisher {
   CloudPublisher(const ros::NodeHandle& nh, std::string topic_name,
                  size_t buff_size, std::string frame_id);
   CloudPublisher() = default;
-  void Publish(CloudData::CLOUD_PTR cloud_ptr_input);
+  void Publish(CloudData::CLOUD_PTR& cloud_ptr_input);
+  void Publish(CloudData::CLOUD_PTR& cloud_ptr_input, double time);
+  bool HasSubscribers();
+
+ private:
+  void PublishData(CloudData::CLOUD_PTR& cloud_ptr_input, ros::Time time);
 
  private:
   ros::NodeHandle nh_;
