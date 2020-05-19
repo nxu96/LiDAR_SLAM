@@ -39,6 +39,26 @@ catkin_make --only-pkg-with-deps lidar_slam
 * ROS Melodic
 * PCL 1.8
 
+### G2O Installation
+
+use the zip file in the `third_party` directory
+
+```
+cd build
+cmake ..
+make -j8
+sudo make install
+```
+
+> One error I met while building this project with G2O: 
+>
+> cholmod library not found. 
+> It is solved by installing the dependency `libsuitesparse-dev`and **re-install the g2o library**
+>
+> `sudo apt-get install libsuitesparse-dev`
+
+
+
 
 
 ## Paper TO-DO List
