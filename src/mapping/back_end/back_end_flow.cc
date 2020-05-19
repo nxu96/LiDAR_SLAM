@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-17 23:06:33
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-18 12:34:33
+ * @Last Modified time: 2020-05-19 11:29:59
  * @Description: Back End Flow Implementation
  */
 #include "mapping/back_end/back_end_flow.h"
@@ -47,6 +47,16 @@ bool BackEndFlow::Run() {
     PublishData();
   }
 
+  return true;
+}
+
+bool BackEndFlow::ForceOptimize() {
+  back_end_ptr_->ForceOptimize();
+  if (back_end_ptr_->HasNewOptimized()) {
+    std::deque<KeyFrame> optimized_key_frames;
+    back_end_ptr_->GetOptimizedKeyFrames(optimized_key_frames);
+    key_frames_pub_ptr_->Publish(optimized_key_frames);
+  }
   return true;
 }
 

@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   saveMap.srv
+  optimizeMap.srv
 )
 
 generate_messages(
@@ -29,12 +30,15 @@ generate_messages(
 )
 
 set(ALL_TARGET_LIBRARIES "")
+# set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${CMAKE_SOURCE_DIR})
+# message(${PROJECT_SOURCE_DIR})
 
 include(cmake/glog.cmake)
 include(cmake/YAML.cmake)
 include(cmake/PCL.cmake)
 include(cmake/eigen.cmake)
 include(cmake/geographic.cmake)
+include(cmake/g2o.cmake)
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 include(cmake/global_definition.cmake)
@@ -43,11 +47,12 @@ catkin_package()
 file(GLOB_RECURSE ALL_SRCS "*.cc")
 file(GLOB_RECURSE NODE_SRCS "src/apps/*_node.cc")
 file(GLOB_RECURSE THIRD_PARTY_SRCS "third_party/*.cpp")
-message(${NODE_SRCS})
-message("test!!!")
-message(${THIRD_PARTY_SRCS})
+# message(${NODE_SRCS})
+# message("test!!!")
+# message(${THIRD_PARTY_SRCS})
 list(REMOVE_ITEM ALL_SRCS ${NODE_SRCS})
 list(REMOVE_ITEM ALL_SRCS ${THIRD_PARTY_SRCS})
+# message(${ALL_SRCS})
 
 add_executable(test_frame_node src/apps/test_frame_node.cc ${ALL_SRCS})
 target_link_libraries(test_frame_node ${catkin_LIBRARIES} ${ALL_TARGET_LIBRARIES})
@@ -61,7 +66,7 @@ add_dependencies(front_end_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(front_end_node ${catkin_LIBRARIES} ${ALL_TARGET_LIBRARIES})
 
 add_executable(back_end_node src/apps/back_end_node.cc ${ALL_SRCS})
-add_dependencies(back_end_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(back_end_node ${catkin_EXPORTED_TARGETS} optimizeMap_gencpp)
 target_link_libraries(back_end_node ${catkin_LIBRARIES} ${ALL_TARGET_LIBRARIES})
 
 add_executable(viewer_node src/apps/viewer_node.cc ${ALL_SRCS})

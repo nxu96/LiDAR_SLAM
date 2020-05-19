@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-10 22:18:49
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-17 20:25:55
+ * @Last Modified time: 2020-05-18 21:25:40
  * @Description: File management implementation, file R/W
  */
 #include "tools/file_manager.h"
@@ -33,12 +33,16 @@ bool FileManager::CreateDirectory(std::string dir_path) {
 }
 
 bool FileManager::InitDirectory(std::string dir_path, std::string use_for) {
+  // TODO(nxu): If the directory exists, we clear all of its contents but do
+  // not delete the directory. Come back to implement this!
+  /*
   if (boost::filesystem::is_directory(dir_path)) {
     boost::filesystem::remove_all(dir_path + "/tail");
     LOG(INFO) << use_for << " is saved in: " << "\n"
               << dir_path << std::endl;
     return true;
   }
+  */
   return CreateDirectory(dir_path, use_for);
 }
 

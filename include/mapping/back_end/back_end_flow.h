@@ -25,6 +25,7 @@ class BackEndFlow {
  public:
   explicit BackEndFlow(ros::NodeHandle& nh);
   bool Run();
+  bool ForceOptimize();
 
  private:
   bool ReadData();

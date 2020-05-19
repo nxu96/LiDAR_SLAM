@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-17 22:13:34
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-18 11:40:40
+ * @Last Modified time: 2020-05-19 11:25:44
  * @Description: Back end implementation!
  */
 #include "mapping/back_end/back_end.h"
@@ -24,6 +24,7 @@ bool BackEnd::InitWithConfig() {
   YAML::Node config_node = YAML::LoadFile(config_file_path);
 
   InitParam(config_node);
+  InitGraphOptimizer(config_node);
   InitDataPath(config_node);
 
   return true;
@@ -32,13 +33,51 @@ bool BackEnd::InitWithConfig() {
 bool BackEnd::InitParam(const YAML::Node& config_node) {
   // init params with yaml config file node
   key_frame_distance_ = config_node["key_frame_distance"].as<float>();
-  optimize_step_with_none_ = config_node["optimize_step_with_none"].as<int>();
-  optimize_step_with_gnss_ = config_node["optimize_step_with_gnss"].as<int>();
-  optimize_step_with_loop_ = config_node["optimize_step_with_loop"].as<int>();
 
   return true;
 }
 
+bool BackEnd::InitGraphOptimizer(const YAML::Node& config_node) {
+  std::string graph_optimizer_type =
+      config_node["graph_optimizer_type"].as<std::string>();
+  if (graph_optimizer_type == "g2o") {
+      graph_optimizer_ptr_ = std::make_shared<G2oGraphOptimizer>("lm_var");
+  } else {
+    LOG(ERROR) << "Graph Optimization Mode " << graph_optimizer_type
+               << " Not Found";
+    return false;
+  }
+  LOG(INFO) << "Selected Backend Optimizer： " << graph_optimizer_type
+            << std::endl << std::endl;
+
+  graph_optimizer_config_.use_gnss =
+      config_node["use_gnss"].as<bool>();
+  graph_optimizer_config_.use_loop_close =
+      config_node["use_loop_close"].as<bool>();
+
+  graph_optimizer_config_.optimize_step_with_key_frame =
+      config_node["optimize_step_with_key_frame"].as<int>();
+  graph_optimizer_config_.optimize_step_with_gnss =
+      config_node["optimize_step_with_gnss"].as<int>();
+  graph_optimizer_config_.optimize_step_with_loop =
+      config_node["optimize_step_with_loop"].as<int>();
+
+  for (int i = 0; i < 6; ++i) {
+    graph_optimizer_config_.odom_edge_noise(i) =
+        config_node[graph_optimizer_type + "_param"]
+                    ["odom_edge_noise"][i].as<double>();
+    graph_optimizer_config_.close_loop_noise(i) =
+        config_node[graph_optimizer_type + "_param"]
+                    ["close_loop_noise"][i].as<double>();
+  }
+
+  for (int i = 0; i < 3; i++) {
+    graph_optimizer_config_.gnss_noise(i) =
+        config_node[graph_optimizer_type + "_param"]
+                   ["gnss_noise"][i].as<double>();
+  }
+  return true;
+}
 bool BackEnd::InitDataPath(const YAML::Node& config_node) {
   std::string data_path = config_node["data_path"].as<std::string>();
   if (data_path == "./") {
@@ -74,7 +113,8 @@ bool BackEnd::Update(const CloudData& cloud_data, const PoseData& laser_odom,
   SaveTrajectory(laser_odom, gnss_pose);
 
   if (MaybeNewKeyFrame(cloud_data, laser_odom)) {
-      MaybeOptimized();
+    AddNodeAndEdge(gnss_pose);
+    MaybeOptimized();
   }
 
   return true;
@@ -93,11 +133,11 @@ bool BackEnd::SaveTrajectory(const PoseData& laser_odom,
       laser_odom_ofs_ << laser_odom.pose(i, j);
 
       if (i == 2 && j == 3) {
-          ground_truth_ofs_ << std::endl;
-          laser_odom_ofs_ << std::endl;
+        ground_truth_ofs_ << std::endl;
+        laser_odom_ofs_ << std::endl;
       } else {
-          ground_truth_ofs_ << " ";
-          laser_odom_ofs_ << " ";
+        ground_truth_ofs_ << " ";
+        laser_odom_ofs_ << " ";
       }
     }
   }
@@ -107,19 +147,20 @@ bool BackEnd::SaveTrajectory(const PoseData& laser_odom,
 
 bool BackEnd::MaybeNewKeyFrame(const CloudData& cloud_data,
                                const PoseData& laser_odom) {
+  static Eigen::Matrix4f last_key_pose = laser_odom.pose;
   // save the first frame as keyframe
   if (key_frames_deque_.size() == 0) {
     has_new_key_frame_ = true;
-    last_key_pose_ = laser_odom.pose;
+    last_key_pose = laser_odom.pose;
   }
 
   // 匹配之后根据距离判断是否需要生成新的关键帧，如果需要，则做相应更新
-  if (fabs(laser_odom.pose(0, 3) - last_key_pose_(0, 3)) +
-      fabs(laser_odom.pose(1, 3) - last_key_pose_(1, 3)) +
-      fabs(laser_odom.pose(2, 3) - last_key_pose_(2, 3)) >
+  if (fabs(laser_odom.pose(0, 3) - last_key_pose(0, 3)) +
+      fabs(laser_odom.pose(1, 3) - last_key_pose(1, 3)) +
+      fabs(laser_odom.pose(2, 3) - last_key_pose(2, 3)) >
       key_frame_distance_) {
     has_new_key_frame_ = true;
-    last_key_pose_ = laser_odom.pose;
+    last_key_pose = laser_odom.pose;
   }
 
   if (has_new_key_frame_) {
@@ -134,37 +175,104 @@ bool BackEnd::MaybeNewKeyFrame(const CloudData& cloud_data,
     key_frame.pose = laser_odom.pose;
     key_frames_deque_.push_back(key_frame);
 
-    latest_key_frame_ = key_frame;
+    current_key_frame_ = key_frame;
   }
 
   return has_new_key_frame_;
 }
 
+bool BackEnd::AddNodeAndEdge(const PoseData& gnss_data) {
+  Eigen::Isometry3d isometry;
+  // Add keyframe node
+  isometry.matrix() = current_key_frame_.pose.cast<double>();
+  graph_optimizer_ptr_->AddSE3Node(isometry, false);
+  new_key_frame_cnt_++;
+
+  // Add lidar odometry edge
+  static KeyFrame last_key_frame = current_key_frame_;
+  int node_num = graph_optimizer_ptr_->GetNodeNum();
+  if (node_num > 1) {
+    Eigen::Matrix4f relative_pose =
+        last_key_frame.pose.inverse() * current_key_frame_.pose;
+    isometry.matrix() = relative_pose.cast<double>();
+    graph_optimizer_ptr_->AddSE3Edge(node_num-2, node_num-1, isometry,
+                                     graph_optimizer_config_.odom_edge_noise);
+  }
+  last_key_frame = current_key_frame_;
+
+  // Add gnss position prior xyz edge
+  if (graph_optimizer_config_.use_gnss) {
+      Eigen::Vector3d xyz(static_cast<double>(gnss_data.pose(0, 3)),
+                          static_cast<double>(gnss_data.pose(1, 3)),
+                          static_cast<double>(gnss_data.pose(2, 3)));
+      graph_optimizer_ptr_->AddSE3PriorXYZEdge(
+          node_num - 1, xyz, graph_optimizer_config_.gnss_noise);
+      new_gnss_cnt_++;
+  }
+  return true;
+}
+
+// Decide if we need to perform optimization, if yes, do so, and reset counts.
 bool BackEnd::MaybeOptimized() {
-    static int unoptimized_cnt = 0;
+  bool need_optimize = false;
 
-    if (++unoptimized_cnt > optimize_step_with_none_) {
-        unoptimized_cnt = 0;
-        has_new_optimized_ = true;
-    }
+  if (new_gnss_cnt_ >= graph_optimizer_config_.optimize_step_with_gnss) {
+    need_optimize = true;
+  }
+  if (new_loop_cnt_ >= graph_optimizer_config_.optimize_step_with_loop) {
+    need_optimize = true;
+  }
+  if (new_key_frame_cnt_ >=
+      graph_optimizer_config_.optimize_step_with_key_frame) {
+    need_optimize = true;
+  }
 
-    return true;
+  if (!need_optimize) {
+    return false;
+  }
+
+  new_gnss_cnt_ = 0;
+  new_loop_cnt_ = 0;
+  new_key_frame_cnt_ = 0;
+
+  if (graph_optimizer_ptr_->Optimize()) {
+    has_new_optimized_ = true;
+  }
+  return true;
+}
+
+// Force to perform one global optimization
+bool BackEnd::ForceOptimize() {
+  if (graph_optimizer_ptr_->Optimize())
+    has_new_optimized_ = true;
+  return has_new_optimized_;
 }
 
 void BackEnd::GetOptimizedKeyFrames(std::deque<KeyFrame>& key_frames_deque) {
-    key_frames_deque = key_frames_deque_;
+  key_frames_deque.clear();
+  // if there is more than one node:
+  if (graph_optimizer_ptr_->GetNodeNum() > 0) {
+    std::deque<Eigen::Matrix4f> optimized_pose;
+    graph_optimizer_ptr_->GetOptimizedPose(optimized_pose);
+    KeyFrame key_frame;
+    for (size_t i = 0; i < optimized_pose.size(); ++i) {
+      key_frame.pose = optimized_pose.at(i);
+      key_frame.index = (unsigned int)i;
+      key_frames_deque.push_back(key_frame);
+    }
+  }
 }
 
 bool BackEnd::HasNewKeyFrame() {
-    return has_new_key_frame_;
+  return has_new_key_frame_;
 }
 
 bool BackEnd::HasNewOptimized() {
-    return has_new_optimized_;
+  return has_new_optimized_;
 }
 
 void BackEnd::GetLatestKeyFrame(KeyFrame& key_frame) {
-    key_frame = latest_key_frame_;
+  key_frame = current_key_frame_;
 }
 
 }  // namespace lidar_slam

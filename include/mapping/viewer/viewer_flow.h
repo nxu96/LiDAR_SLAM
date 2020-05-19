@@ -3,7 +3,7 @@
  * @Email: nxu@umich.edu
  * @Date: 2020-05-17 13:38:50
  * @Last Modified by: Ning Xu
- * @Last Modified time: 2020-05-17 22:33:58
+ * @Last Modified time: 2020-05-18 21:54:36
  * @Description: Viewer flow heaer file
  */
 #ifndef LIDAR_SLAM_INCLUDE_MAPPING_VIEWER_VIEWER_FLOW_H_
@@ -33,8 +33,8 @@ class ViewerFlow {
   bool ReadData();
   bool HasData();
   bool ValidData();
-  bool UpdateViewer();
-  bool PublishData();
+  bool PublishGlobalData();
+  bool PublishLocalData();
 
  private:
   // subscriber
