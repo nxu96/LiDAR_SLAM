@@ -23,7 +23,7 @@ catkin_make --only-pkg-with-deps lidar_slam
   * Back end graph optimization
   * Loop closure
   * Visualization
-- [ ] Back end optimization with g2o and Ceres
+- [x] Back end optimization with g2o and Ceres
 - [ ] Loop closure
 - [ ] Front end extension with A-LOAM
 - [ ] Localization with global map
